@@ -11,11 +11,12 @@ import ch.njol.util.Kleenean;
 import io.github.qloha.skLoha.skript.cutscene.Cutscene;
 import io.github.qloha.skLoha.skript.cutscene.CutsceneManager;
 import io.github.qloha.skLoha.skript.cutscene.Movement;
+import io.github.qloha.skLoha.skript.cutscene.CutsceneContext;
 
 public class EffSetMovement extends Effect {
 
     static {
-        Skript.registerEffect(EffSetMovement.class, "set movement of cutscene %string% to %string%");
+        Skript.registerEffect(EffSetMovement.class, "set movement of cutscene %string% to %string%", "set movement of %string% to %string%", "set movement of cutscene to %string%");
     }
 
     private Expression<String> cutsceneName;
@@ -24,19 +25,24 @@ public class EffSetMovement extends Effect {
     @SuppressWarnings("unchecked")
     @Override
     public boolean init(Expression<?>[] expressions, int matchedPattern, Kleenean isDelayed, ParseResult parser) {
-        this.cutsceneName = (Expression<String>) expressions[0];
-        this.movement = (Expression<String>) expressions[1];
+        // allow optional cutscene name
+        if (expressions.length == 2) {
+            this.cutsceneName = (Expression<String>) expressions[0];
+            this.movement = (Expression<String>) expressions[1];
+        } else {
+            this.movement = (Expression<String>) expressions[0];
+        }
         return true;
     }
 
     @Override
     public String toString(Event event, boolean debug) {
-        return "set movement of cutscene " + cutsceneName.toString(event, debug) + " to " + movement.toString(event, debug);
+        return "set movement of cutscene " + (cutsceneName != null ? cutsceneName.toString(event, debug) : "(implicit)") + " to " + movement.toString(event, debug);
     }
 
     @Override
     protected void execute(Event event) {
-        String name = cutsceneName.getSingle(event);
+        String name = (cutsceneName != null) ? cutsceneName.getSingle(event) : CutsceneContext.peek();
         if (name == null) return;
         Cutscene cs = CutsceneManager.get(name);
         if (cs == null) return;

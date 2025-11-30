@@ -6,6 +6,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.server.PluginEnableEvent;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.scheduler.BukkitTask;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -17,6 +18,7 @@ public final class SkLoha extends JavaPlugin {
     private Object addon;
     private int registrationAttempts = 0;
     private static final int MAX_ATTEMPTS = 20;
+    private BukkitTask registrationTask = null;
 
     @Override
     public void onEnable() {
@@ -32,13 +34,11 @@ public final class SkLoha extends JavaPlugin {
             try {
                 Method accept = skriptClass.getMethod("isAcceptRegistrations");
                 Object ok = accept.invoke(null);
-                getLogger().info("Skript.isAcceptRegistrations() => " + ok);
                 if (ok instanceof Boolean && !((Boolean) ok)) {
                     canRegister = false;
                 }
             } catch (NoSuchMethodException ignored) {
                 // method not present; assume OK and attempt registration
-                getLogger().info("Skript.isAcceptRegistrations() not available");
             }
 
             if (!canRegister) {
@@ -77,10 +77,18 @@ public final class SkLoha extends JavaPlugin {
 
     private void attemptRegistrationPeriodically() {
         // Try every 1 second up to MAX_ATTEMPTS
-        Bukkit.getScheduler().runTaskTimer(this, () -> {
-            if (addon != null) return; // already registered
+        if (registrationTask != null) return; // already scheduled
+        registrationTask = Bukkit.getScheduler().runTaskTimer(this, () -> {
+            if (addon != null) {
+                // cancel the task if registration succeeded elsewhere
+                if (registrationTask != null) registrationTask.cancel();
+                registrationTask = null;
+                return;
+            }
             if (registrationAttempts++ > MAX_ATTEMPTS) {
                 getLogger().warning("Exceeded max registration attempts; giving up for now.");
+                if (registrationTask != null) registrationTask.cancel();
+                registrationTask = null;
                 return;
             }
             getLogger().info("Registration attempt " + registrationAttempts + " of " + MAX_ATTEMPTS);
@@ -99,34 +107,23 @@ public final class SkLoha extends JavaPlugin {
             try {
                 Method accept = skriptClass.getMethod("isAcceptRegistrations");
                 Object ok = accept.invoke(null);
-                getLogger().info("[diagnostic] Skript.isAcceptRegistrations() => " + ok);
                 if (ok instanceof Boolean && !((Boolean) ok)) {
-                    getLogger().warning("[diagnostic] Skript is not accepting registrations at this time");
+                    getLogger().warning("Skript is not accepting registrations at this time");
                     return;
                 }
             } catch (NoSuchMethodException ignored) {
-                getLogger().info("[diagnostic] Skript.isAcceptRegistrations() not available");
+                // ignore
             }
 
             Method registerMethod = null;
-            StringBuilder sigs = new StringBuilder();
             for (Method m : skriptClass.getDeclaredMethods()) {
                 if (!m.getName().equals("registerAddon")) continue;
-                sigs.append("registerAddon(");
-                Class<?>[] params = m.getParameterTypes();
-                for (int i = 0; i < params.length; i++) {
-                    if (i > 0) sigs.append(",");
-                    sigs.append(params[i].getSimpleName());
-                }
-                sigs.append(")\n");
                 if (!Modifier.isStatic(m.getModifiers())) continue;
                 if (m.getParameterCount() != 1) continue;
                 registerMethod = m;
             }
-            if (sigs.length() > 0) getLogger().info("[diagnostic] Skript.registerAddon signatures:\n" + sigs.toString());
 
             if (registerMethod != null) {
-                getLogger().info("[diagnostic] Found compatible registerAddon method: parameter type = " + registerMethod.getParameterTypes()[0].getSimpleName());
                 registerMethod.setAccessible(true);
                 try {
                     addon = registerMethod.invoke(null, this);
@@ -136,7 +133,6 @@ public final class SkLoha extends JavaPlugin {
                     if (param == Class.class) arg = this.getClass();
                     else if (param == String.class) arg = this.getName();
                     else if (param.isAssignableFrom(this.getClass())) arg = this;
-                    getLogger().info("[diagnostic] Trying alternate argument type: " + (arg != null ? arg.getClass().getSimpleName() : "null"));
                     if (arg != null) {
                         addon = registerMethod.invoke(null, arg);
                     } else {
@@ -155,6 +151,8 @@ public final class SkLoha extends JavaPlugin {
             }
 
             if (addon != null) {
+                // ClassInfo registration for 'cutscene' is handled by the runtime ClassInfos placeholder or via SkriptAddon.loadClasses.
+                // Avoid direct compile-time references to Skript Parser types here to keep compilation independent of Skript jar.
                 // Attempt to call loadClasses if available
                 Method loadSingle = null;
                 for (Method m : addon.getClass().getMethods()) {
@@ -176,11 +174,38 @@ public final class SkLoha extends JavaPlugin {
                         getLogger().warning("Failed to invoke addon.loadClasses(...) method: " + e.getMessage());
                     }
                 }
+                // As an extra step, explicitly load our Skript classes to ensure their static initializers run
+                String[] classesToLoad = new String[] {
+                        "io.github.qloha.skLoha.skript.ClassInfos",
+                        "io.github.qloha.skLoha.skript.effects.EffAddWaypoint",
+                        "io.github.qloha.skLoha.skript.effects.EffCreateCutscene",
+                        "io.github.qloha.skLoha.skript.effects.EffCreateCutsceneSection",
+                        "io.github.qloha.skLoha.skript.effects.EffWithCutsceneSection",
+                        "io.github.qloha.skLoha.skript.effects.EffPlayCutscene",
+                        "io.github.qloha.skLoha.skript.effects.EffSetMovement",
+                        "io.github.qloha.skLoha.skript.effects.EffSetMovementInterval",
+                        "io.github.qloha.skLoha.skript.expressions.ExprCutscene",
+                        "io.github.qloha.skLoha.skript.expressions.ExprWaypoints"
+                };
+                for (String cls : classesToLoad) {
+                    try {
+                        Class.forName(cls, true, this.getClass().getClassLoader());
+                        getLogger().info("Loaded Skript class: " + cls);
+                    } catch (ClassNotFoundException cnf) {
+                        getLogger().warning("Could not find Skript class to load: " + cls + " (" + cnf.getMessage() + ")");
+                    } catch (Throwable t) {
+                        getLogger().warning("Failed loading Skript class " + cls + ": " + t.getMessage());
+                    }
+                }
                 getLogger().info("Skript addon registered successfully.");
+                // cancel periodic task if running
+                if (registrationTask != null) {
+                    registrationTask.cancel();
+                    registrationTask = null;
+                }
             }
         } catch (ClassNotFoundException e) {
             // Skript not present yet
-            getLogger().info("[diagnostic] Skript class not found on this attempt");
         } catch (InvocationTargetException ite) {
             Throwable cause = ite.getCause();
             if (cause != null && cause.getClass().getName().equals("ch.njol.skript.SkriptAPIException")) {
@@ -196,6 +221,10 @@ public final class SkLoha extends JavaPlugin {
     @Override
     public void onDisable() {
         // Plugin shutdown logic
+        if (registrationTask != null) {
+            registrationTask.cancel();
+            registrationTask = null;
+        }
     }
 
     public static SkLoha getInstance() {

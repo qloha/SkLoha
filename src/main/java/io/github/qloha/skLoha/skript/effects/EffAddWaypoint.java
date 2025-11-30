@@ -11,11 +11,12 @@ import ch.njol.util.Kleenean;
 
 import io.github.qloha.skLoha.skript.cutscene.Cutscene;
 import io.github.qloha.skLoha.skript.cutscene.CutsceneManager;
+import io.github.qloha.skLoha.skript.cutscene.CutsceneContext;
 
 public class EffAddWaypoint extends Effect {
 
     static {
-        Skript.registerEffect(EffAddWaypoint.class, "add %location% to waypoints of cutscene %string%", "add %locations% to waypoints of cutscene %string%");
+        Skript.registerEffect(EffAddWaypoint.class, "add %location% to waypoints of cutscene %string%", "add %locations% to waypoints of cutscene %string%", "add %location% to waypoints", "add %locations% to waypoints");
     }
 
     private Expression<Location> location;
@@ -25,18 +26,19 @@ public class EffAddWaypoint extends Effect {
     @Override
     public boolean init(Expression<?>[] expressions, int matchedPattern, Kleenean isDelayed, ParseResult parser) {
         this.location = (Expression<Location>) expressions[0];
-        this.cutsceneName = (Expression<String>) expressions[1];
+        // second expression may be null (optional)
+        if (expressions.length > 1) this.cutsceneName = (Expression<String>) expressions[1];
         return true;
     }
 
     @Override
     public String toString(Event event, boolean debug) {
-        return "add waypoint to cutscene " + cutsceneName.toString(event, debug);
+        return "add waypoint to cutscene " + (cutsceneName != null ? cutsceneName.toString(event, debug) : "(implicit)");
     }
 
     @Override
     protected void execute(Event event) {
-        String name = cutsceneName.getSingle(event);
+        String name = (cutsceneName != null) ? cutsceneName.getSingle(event) : CutsceneContext.peek();
         if (name == null) return;
         Cutscene cs = CutsceneManager.get(name);
         if (cs == null) return;
