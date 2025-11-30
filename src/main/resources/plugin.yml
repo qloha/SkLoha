@@ -7,3 +7,4 @@ load: STARTUP
 authors: [ qloha ]
 description: Skript addon for scenes & more!
 website: https://qloha.github.io/
+softdepend: [ Skript ]
