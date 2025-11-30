@@ -1,0 +1,13 @@
+# Intro using explicit locations (teleport)
+
+create cutscene "introTeleport":
+    add location(0, 64, 0, world "world") to waypoints of cutscene
+    set movement of cutscene to teleport
+    set movement interval of cutscene to 1 seconds
+    add location(7, 64, -9, world "world") to waypoints of cutscene
+    add location(14, 64, -18, world "world") to waypoints of cutscene
+
+command /startintro:
+    trigger:
+        play cutscene "introTeleport" to player
+

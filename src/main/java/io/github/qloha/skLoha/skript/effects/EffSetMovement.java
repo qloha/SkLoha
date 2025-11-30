@@ -16,7 +16,13 @@ import io.github.qloha.skLoha.skript.cutscene.CutsceneContext;
 public class EffSetMovement extends Effect {
 
     static {
-        Skript.registerEffect(EffSetMovement.class, "set movement of cutscene %string% to %string%", "set movement of %string% to %string%", "set movement of cutscene to %string%");
+        try {
+            Skript.registerEffect(EffSetMovement.class, "set movement of cutscene %string% to %string%", "set movement of %string% to %string%", "set movement of cutscene to %string%");
+            System.out.println("[SkLoha] EffSetMovement static init: registered");
+        } catch (Throwable t) {
+            System.err.println("[SkLoha] EffSetMovement static init: failed to register: " + t.getMessage());
+            t.printStackTrace();
+        }
     }
 
     private Expression<String> cutsceneName;

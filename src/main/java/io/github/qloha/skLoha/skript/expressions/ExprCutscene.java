@@ -17,7 +17,13 @@ import io.github.qloha.skLoha.skript.cutscene.CutsceneManager;
 public class ExprCutscene extends SimpleExpression<Cutscene> {
 
     static {
-        Skript.registerExpression(ExprCutscene.class, Cutscene.class, ExpressionType.SIMPLE, "cutscene %string%");
+        try {
+            Skript.registerExpression(ExprCutscene.class, Cutscene.class, ExpressionType.SIMPLE, "cutscene %string%");
+            System.out.println("[SkLoha] ExprCutscene static init: registered");
+        } catch (Throwable t) {
+            System.err.println("[SkLoha] ExprCutscene static init: failed to register: " + t.getMessage());
+            t.printStackTrace();
+        }
     }
 
     private Expression<String> name;

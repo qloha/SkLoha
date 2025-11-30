@@ -16,7 +16,13 @@ import io.github.qloha.skLoha.skript.cutscene.CutsceneManager;
 public class ExprWaypoints extends SimpleExpression<Location> {
 
     static {
-        Skript.registerExpression(ExprWaypoints.class, Location.class, ExpressionType.SIMPLE, "waypoints of %string%", "%string%'s waypoints");
+        try {
+            Skript.registerExpression(ExprWaypoints.class, Location.class, ExpressionType.SIMPLE, "waypoints of %string%", "%string%'s waypoints");
+            System.out.println("[SkLoha] ExprWaypoints static init: registered");
+        } catch (Throwable t) {
+            System.err.println("[SkLoha] ExprWaypoints static init: failed to register: " + t.getMessage());
+            t.printStackTrace();
+        }
     }
 
     private Expression<String> cutsceneNameExpr;

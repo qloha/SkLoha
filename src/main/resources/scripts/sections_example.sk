@@ -1,0 +1,20 @@
+# Example demonstrating sections (create cutscene with section and 'with cutscene')
+
+on load:
+    # create cutscene using section syntax
+    create cutscene "sectioned"
+
+create cutscene "sectioned":
+    add location(0, 64, 0, world "world") to waypoints
+    add location(5, 64, 0, world "world") to waypoints
+    set movement of cutscene to glide
+    set movement interval of cutscene to 3 seconds
+
+# Alternative using 'with cutscene':
+with cutscene "sectioned":
+    add location(10, 64, 0, world "world") to waypoints
+
+command /playsectioned:
+    trigger:
+        play cutscene "sectioned" to player
+

@@ -17,13 +17,13 @@ import java.lang.reflect.Method;
 public class EffCreateCutsceneSection extends Effect {
 
     static {
+        // Register the section form explicitly here. This ensures Skript knows this pattern is a section.
         Skript.registerEffect(EffCreateCutsceneSection.class, "create cutscene %string%:");
     }
 
     private Expression<String> name;
     private Object parseResultObj;
 
-    @SuppressWarnings("unchecked")
     @Override
     public boolean init(Expression<?>[] expressions, int matchedPattern, Kleenean isDelayed, ParseResult parser) {
         this.name = (Expression<String>) expressions[0];
@@ -37,7 +37,7 @@ public class EffCreateCutsceneSection extends Effect {
     }
 
     @Override
-    protected void execute(Event e) {
+    public void execute(Event e) {
         String n = name.getSingle(e);
         if (n == null) return;
         CutsceneManager.create(n);

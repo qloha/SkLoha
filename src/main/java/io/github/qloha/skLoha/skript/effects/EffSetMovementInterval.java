@@ -15,7 +15,13 @@ import io.github.qloha.skLoha.skript.cutscene.CutsceneContext;
 public class EffSetMovementInterval extends Effect {
 
     static {
-        Skript.registerEffect(EffSetMovementInterval.class, "set movement interval of cutscene %string% to %number% (seconds|secs|s)", "set movement interval of %number% (seconds|secs|s)");
+        try {
+            Skript.registerEffect(EffSetMovementInterval.class, "set movement interval of cutscene %string% to %number% (seconds|secs|s)", "set movement interval of %number% (seconds|secs|s)");
+            System.out.println("[SkLoha] EffSetMovementInterval static init: registered");
+        } catch (Throwable t) {
+            System.err.println("[SkLoha] EffSetMovementInterval static init: failed to register: " + t.getMessage());
+            t.printStackTrace();
+        }
     }
 
     private Expression<String> cutsceneName;

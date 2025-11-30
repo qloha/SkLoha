@@ -15,7 +15,13 @@ import io.github.qloha.skLoha.skript.cutscene.CutsceneManager;
 public class EffPlayCutscene extends Effect {
 
     static {
-        Skript.registerEffect(EffPlayCutscene.class, "play cutscene %string% to %player%", "play cutscene %string%");
+        try {
+            Skript.registerEffect(EffPlayCutscene.class, "play cutscene %string% to %player%", "play cutscene %string%");
+            System.out.println("[SkLoHa] EffPlayCutscene static init: registered");
+        } catch (Throwable t) {
+            System.err.println("[SkLoHa] EffPlayCutscene static init: failed to register: " + t.getMessage());
+            t.printStackTrace();
+        }
     }
 
     private Expression<String> cutsceneName;
@@ -23,9 +29,9 @@ public class EffPlayCutscene extends Effect {
 
     @SuppressWarnings("unchecked")
     @Override
-    public boolean init(ch.njol.skript.lang.Expression<?>[] expressions, int matchedPattern, Kleenean isDelayed, ParseResult parser) {
+    public boolean init(Expression<?>[] expressions, int matchedPattern, Kleenean isDelayed, ParseResult parser) {
         this.cutsceneName = (Expression<String>) expressions[0];
-        this.player = (Expression<Player>) expressions[1];
+        if (expressions.length > 1) this.player = (Expression<Player>) expressions[1];
         return true;
     }
 

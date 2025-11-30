@@ -1,0 +1,18 @@
+# Intro from a location list (glide)
+# Place this file in your server's Skript scripts folder (plugins/Skript/scripts/) or include it in your server and reload scripts.
+
+on load:
+    delete {_locList::*}
+    add location(0, 64, 0, world "world") to {_locList::*}
+    add location(5, 64, 0, world "world") to {_locList::*}
+    add location(10, 64, 0, world "world") to {_locList::*}
+
+create cutscene "introFromList":
+    add {_locList::*} to waypoints of cutscene
+    set movement of cutscene to glide
+    set movement interval of cutscene to 2 seconds
+
+command /playlistintro:
+    trigger:
+        play cutscene "introFromList" to player
+

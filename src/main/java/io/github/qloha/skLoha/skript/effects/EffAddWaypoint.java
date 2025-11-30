@@ -16,7 +16,12 @@ import io.github.qloha.skLoha.skript.cutscene.CutsceneContext;
 public class EffAddWaypoint extends Effect {
 
     static {
-        Skript.registerEffect(EffAddWaypoint.class, "add %location% to waypoints of cutscene %string%", "add %locations% to waypoints of cutscene %string%", "add %location% to waypoints", "add %locations% to waypoints");
+        try {
+            Skript.registerEffect(EffAddWaypoint.class, "add %location% to waypoints of cutscene %string%", "add %locations% to waypoints of cutscene %string%", "add %location% to waypoints", "add %locations% to waypoints");
+            System.out.println("[SkLoha] EffAddWaypoint static init: registered");
+        } catch (Throwable t) {
+            System.out.println("[SkLoha] EffAddWaypoint static init: failed to register: " + t.getMessage());
+        }
     }
 
     private Expression<Location> location;
