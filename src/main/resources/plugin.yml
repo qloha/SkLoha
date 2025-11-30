@@ -1,0 +1,9 @@
+name: SkLoha
+version: '1.0.0-BETA'
+main: io.github.qloha.skLoha.SkLoha
+api-version: '1.21.10'
+prefix: SkLoha
+load: STARTUP
+authors: [ qloha ]
+description: Skript addon for scenes & more!
+website: https://qloha.github.io/
